@@ -24,8 +24,8 @@ buttons = {
 
 # Channel sound maps
 sounds = {
-    OK_BUTTON: "success.mp3",
-    CANCEL_BUTTON: "error2.mp3"
+    OK_BUTTON: "sound/success.mp3",
+    CANCEL_BUTTON: "sound/error.mp3"
 }
 
 # Configure GPIO
@@ -36,7 +36,8 @@ GPIO.setup(A_PIN, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 GPIO.setup(B_PIN, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 
 # Events
-GPIO.add_event_detect(A_PIN, GPIO.RISING)
+GPIO.add_event_detect(A_PIN, GPIO.BOTH)
+GPIO.add_event_detect(B_PIN, GPIO.BOTH)
 
 
 def get_ip_address(ifname):
@@ -59,14 +60,19 @@ def print_test_label(channel):
 
 def counter(channel, encoder):
     global phase_counter
+    if encoder.rotation > 0:
+        phase_counter += 1
+    else:
+        phase_counter += -1
 
-    phase_counter += encoder.rotation
+    if phase_counter < 0:
+        phase_counter = 0
 
 
-def print_wire_length(channel):
+def print_wire_length():
     global phase_counter
-    feet, counter = divmod(phase_counter, 600)
-    inches = counter / 50
+    feet, counter = divmod(int(phase_counter), 2400)
+    inches = int(counter) / 200
     print("Feet %s, Inches: %s" % (feet, inches))
 
 
@@ -85,14 +91,13 @@ if __name__ == '__main__':
                 pressed = GPIO.input(button)
                 if pressed and prev_state is False:
                     print("Counter: %s" % phase_counter)
-                    print_wire_length(A_PIN)
+                    print_wire_length()
                     phase_counter = 0
                     buttons[button] = True
                     beep(button)
-                    #print_test(button)
+                    #print_test_label(button)
                 elif not pressed and prev_state is True:
                     buttons[button] = False
-
             sleep(0.1)
     except KeyboardInterrupt:
         encoder.stop()
