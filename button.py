@@ -14,19 +14,12 @@ OK_BUTTON = 4
 CANCEL_BUTTON = 17
 A_PIN = 22
 B_PIN = 23
-PREV_SEQ = 0
-PREV_DELTA = 1
 
 # Keep track of buttons last state
 # button, prev_state
 buttons = {
     OK_BUTTON: False,
     CANCEL_BUTTON: False
-}
-
-encoder = {
-    A_PIN: False,
-    B_PIN: False
 }
 
 # Channel sound maps
@@ -64,11 +57,10 @@ def print_test_label(channel):
     system("/usr/bin/lp /home/pi/test.txt")
 
 
-def counter(channel):
+def counter(channel, encoder):
     global phase_counter
-    global PREV_DELTA
 
-    phase_counter += PREV_DELTA
+    phase_counter += encoder.rotation
 
 
 def print_wire_length(channel):
@@ -79,12 +71,14 @@ def print_wire_length(channel):
 
 
 if __name__ == '__main__':
+    encoder = RotaryEncoder(A_PIN, B_PIN)
     print(get_ip_address('eth0'))
     try:
-        # Setup event listeners
-        GPIO.add_event_callback(A_PIN, counter)
-        encoder = RotaryEncoder(A_PIN, B_PIN)
+        # Start the encoder
         encoder.start()
+
+        # Setup event listeners
+        GPIO.add_event_callback(A_PIN, lambda x: counter(x, encoder))
 
         while True:
             for button, prev_state in buttons.items():
