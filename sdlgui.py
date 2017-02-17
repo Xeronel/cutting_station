@@ -4,7 +4,7 @@ os.environ["PYSDL2_DLL_PATH"] = os.path.dirname(os.path.abspath(__file__))
 import sys, sdl2, sdl2.ext, time
 
 sdl2.ext.init()
-window = sdl2.ext.Window("test", size=(800, 600))
+window = sdl2.ext.Window("test", size=(800, 600), flags=sdl2.SDL_WINDOW_FULLSCREEN)
 window.show()
 factory = sdl2.ext.SpriteFactory(sdl2.ext.SOFTWARE)
 sprite = factory.from_image("smile.png")
