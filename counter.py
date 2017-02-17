@@ -9,7 +9,6 @@ import struct
 
 
 # Setup constants
-phase_counter = 0
 OK_BUTTON = 4
 CANCEL_BUTTON = 17
 A_PIN = 22
@@ -38,6 +37,11 @@ GPIO.setup(B_PIN, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 # Events
 GPIO.add_event_detect(A_PIN, GPIO.BOTH)
 GPIO.add_event_detect(B_PIN, GPIO.BOTH)
+
+
+# Global Vars
+phase_counter = 0
+last_count = 0
 
 
 def get_ip_address(ifname):
