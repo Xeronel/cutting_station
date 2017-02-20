@@ -1,10 +1,10 @@
 import RPi.GPIO as GPIO
-from threading import Thread
+from multiprocessing import Process
 
 
-class RotaryEncoder(Thread):
+class RotaryEncoder(Process):
     def __init__(self, a_pin, b_pin):
-        Thread.__init__(self)
+        Process.__init__(self)
 
         # Pins
         self.a_pin = a_pin
