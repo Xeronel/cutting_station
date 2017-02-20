@@ -6,6 +6,10 @@ from os import system
 import socket
 import fcntl
 import struct
+from sdlgui import GUI
+from multiprocessing import Manager, Lock
+from ctypes import c_int
+from threaded_counter import UpdateCounter
 
 
 # Setup constants
@@ -35,13 +39,14 @@ GPIO.setup(A_PIN, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 GPIO.setup(B_PIN, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 
 # Events
-GPIO.add_event_detect(A_PIN, GPIO.BOTH)
-GPIO.add_event_detect(B_PIN, GPIO.BOTH)
+GPIO.add_event_detect(A_PIN, GPIO.FALLING)
+GPIO.add_event_detect(B_PIN, GPIO.FALLING)
 
 
 # Global Vars
-phase_counter = 0
-last_count = 0
+manager = Manager()
+phase_count = manager.Value(c_int, 0)
+lock = Lock()
 
 
 def get_ip_address(ifname):
@@ -62,41 +67,24 @@ def print_test_label(channel):
     system("/usr/bin/lp /home/pi/test.txt")
 
 
-def counter(channel, encoder):
-    global phase_counter
-    if encoder.rotation > 0:
-        phase_counter += 1
-    else:
-        phase_counter += -1
-
-    if phase_counter < 0:
-        phase_counter = 0
-
-
-def print_wire_length():
-    global phase_counter
-    feet, counter = divmod(int(phase_counter), 2400)
-    inches = int(counter) / 200
-    print("Feet %s, Inches: %s" % (feet, inches))
-
-
 if __name__ == '__main__':
     encoder = RotaryEncoder(A_PIN, B_PIN)
-    print(get_ip_address('eth0'))
-    try:
-        # Start the encoder
-        encoder.start()
+    gui = GUI(phase_count)
+    update_counter = UpdateCounter(lock, phase_count, encoder)
 
-        # Setup event listeners
-        GPIO.add_event_callback(A_PIN, lambda x: counter(x, encoder))
+    print(get_ip_address('eth0'))
+
+    try:
+        update_counter.start()
+        encoder.run()
+        gui.start()
 
         while True:
             for button, prev_state in buttons.items():
                 pressed = GPIO.input(button)
                 if pressed and prev_state is False:
-                    print("Counter: %s" % phase_counter)
-                    print_wire_length()
-                    phase_counter = 0
+                    print("Encoder: %s" % encoder.counter)
+                    encoder.counter = 0
                     buttons[button] = True
                     beep(button)
                     #print_test_label(button)
@@ -104,5 +92,4 @@ if __name__ == '__main__':
                     buttons[button] = False
             sleep(0.1)
     except KeyboardInterrupt:
-        encoder.stop()
         GPIO.cleanup()
