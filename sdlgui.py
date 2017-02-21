@@ -1,23 +1,28 @@
 import os
 os.environ["PYSDL2_DLL_PATH"] = os.path.dirname(os.path.abspath(__file__))
-import sdl2, sdl2.ext, time
+import sdl2, sdl2.ext
 from multiprocessing import Process
 
 
 class GUI(Process):
-    def __init__(self, counter):
+    def __init__(self, conn):
         Process.__init__(self)
         self.window = None
         self.renderer = None
         self.factory = None
         self.font_manager = sdl2.ext.FontManager(font_path='fonts/OpenSans-Regular.ttf', size=90)
-        self.running = False
-        self.counter = counter
+        self.conn = conn
+        self.length = "Feet: 0, Inches: 0"
+        self.counter = 0
 
     def render_length(self):
-        feet, counter = divmod(self.counter.value, 600)
+        feet, counter = divmod(self.counter, 600)
         inches = int(counter) / 50
-        return "Feet: %s, Inches: %s" % (feet, inches)
+
+        if self.counter < 0:
+            return "Feet: %s, Inches: %s" % (0, 0)
+        else:
+            return "Feet: %s, Inches: %s" % (feet, inches)
 
     def start_sdl(self):
         sdl2.ext.init()
@@ -27,11 +32,11 @@ class GUI(Process):
         self.factory = sdl2.ext.SpriteFactory(renderer=self.renderer)
 
     def run(self):
-        self.running = True
+        print("SDL pid: %s" % os.getpid())
         self.start_sdl()
-        while self.running:
+        while True:
             self.renderer.clear(sdl2.ext.Color(0, 0, 0))
-            text = self.factory.from_text(self.render_length(), fontmanager=self.font_manager)
+            text = self.factory.from_text(self.length, fontmanager=self.font_manager)
             self.renderer.copy(text, dstrect=(0, 0, text.size[0], text.size[1]))
             self.renderer.present()
-            time.sleep(1)
+            self.length = self.conn.recv()

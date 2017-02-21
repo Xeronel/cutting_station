@@ -1,15 +1,17 @@
 #!/usr/bin/python2.7
 import RPi.GPIO as GPIO
-from encoder import RotaryEncoder
+from encoder import RotaryEncoder, RotaryEncoderProcess
 from time import sleep
+import os
 from os import system
 import socket
 import fcntl
 import struct
 from sdlgui import GUI
-from multiprocessing import Manager, Lock
-from ctypes import c_int
+from multiprocessing import Manager, Lock, Pipe
+from ctypes import c_int, c_char_p
 from threaded_counter import UpdateCounter
+from inputs import Inputs
 
 
 # Setup constants
@@ -42,10 +44,9 @@ GPIO.setup(B_PIN, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 GPIO.add_event_detect(A_PIN, GPIO.FALLING)
 GPIO.add_event_detect(B_PIN, GPIO.FALLING)
 
-
 # Global Vars
 manager = Manager()
-phase_count = manager.Value(c_int, 0)
+length = manager.Value(c_char_p, "Feet: 0, Inches: 0")
 lock = Lock()
 
 
@@ -58,38 +59,33 @@ def get_ip_address(ifname):
     )[20:24])
 
 
-def beep(channel):
-    if channel in sounds:
-        system('mpg123 -q %s &' % sounds[channel])
-
-
 def print_test_label(channel):
     system("/usr/bin/lp /home/pi/test.txt")
 
 
 if __name__ == '__main__':
-    encoder = RotaryEncoder(A_PIN, B_PIN)
-    gui = GUI(phase_count)
-    update_counter = UpdateCounter(lock, phase_count, encoder)
+    #update_counter = UpdateCounter(lock, phase_count, encoder)
 
+    enc_pipe1, enc_pipe2 = Pipe()
+    gui_pipe1, gui_pipe2 = Pipe()
+
+    inputs = Inputs(buttons, sounds, gui_pipe1)
+    encoder = RotaryEncoderProcess(A_PIN, B_PIN, enc_pipe2)
+    gui = GUI(gui_pipe2)
+
+    print(os.getpid())
     print(get_ip_address('eth0'))
 
     try:
-        update_counter.start()
-        encoder.run()
+        #update_counter.start()
+        #inputs.start()
+        encoder.start()
+        inputs.start()
         gui.start()
 
         while True:
-            for button, prev_state in buttons.items():
-                pressed = GPIO.input(button)
-                if pressed and prev_state is False:
-                    print("Encoder: %s" % encoder.counter)
-                    encoder.counter = 0
-                    buttons[button] = True
-                    beep(button)
-                    #print_test_label(button)
-                elif not pressed and prev_state is True:
-                    buttons[button] = False
-            sleep(0.1)
+            inputs.add_count(enc_pipe1.recv())
+
     except KeyboardInterrupt:
         GPIO.cleanup()
+
