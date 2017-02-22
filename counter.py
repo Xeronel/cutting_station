@@ -2,7 +2,6 @@
 import RPi.GPIO as GPIO
 from encoder import RotaryEncoder
 import os
-from os import system
 import socket
 import fcntl
 import struct
@@ -55,10 +54,6 @@ def get_ip_address(ifname):
         0x8915,  # SIOCGIFADDR
         struct.pack('256s', ifname[:15])
     )[20:24])
-
-
-def print_test_label(channel):
-    system("/usr/bin/lp /home/pi/test.txt")
 
 
 if __name__ == '__main__':
