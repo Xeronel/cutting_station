@@ -1,35 +1,17 @@
 from multiprocessing import Process
 import RPi.GPIO as GPIO
-from time import sleep
 import os
 
 
-class RotaryEncoder:
-    def __init__(self, a_pin, b_pin):
-        # Pins
-        self.a_pin = a_pin
-        self.b_pin = b_pin
-
-        self.counter = 0
-
-    def a_falling(self, channel):
-        if GPIO.input(self.b_pin):
-            self.counter -= 1
-
-    def b_falling(self, channel):
-        if GPIO.input(self.a_pin):
-            self.counter += 1
-
-    def start(self):
-        print('Encoder pid: %s' % os.getpid())
-        GPIO.add_event_callback(self.a_pin, self.a_falling)
-        GPIO.add_event_callback(self.b_pin, self.b_falling)
-
-
-class RotaryEncoderProcess(Process):
-    def __init__(self, a_pin, b_pin, pipe):
+class RotaryEncoder(Process):
+    def __init__(self, a_pin, b_pin, ok_button, cancel_button, pipe):
         Process.__init__(self)
         self.pipe = pipe
+
+        # Buttons that should reset the count
+        self.ok = ok_button
+        self.cancel = cancel_button
+
         # Set A and B phase pins
         self.a_pin = a_pin
         self.b_pin = b_pin
@@ -45,7 +27,6 @@ class RotaryEncoderProcess(Process):
 
     def run(self):
         print("Encoder: %s" % os.getpid())
-
         # Initialize variables to the encoder's current state
         self.a_phase = GPIO.input(self.a_pin)
         self.b_phase = GPIO.input(self.b_pin)
@@ -74,6 +55,5 @@ class RotaryEncoderProcess(Process):
                 self.pipe.send(self.count)
                 self.count = 0
 
-            if GPIO.input(4):
+            if GPIO.input(self.ok) or GPIO.input(self.cancel):
                 self.count = 0
-                sleep(0.5)
