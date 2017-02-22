@@ -59,7 +59,7 @@ def get_ip_address(ifname):
 if __name__ == '__main__':
     enc_pipe1, enc_pipe2 = Pipe()
 
-    inputs = Inputs(buttons, sounds, length, lock)
+    inputs = Inputs(OK_BUTTON, CANCEL_BUTTON, buttons, sounds, length, lock)
     encoder = RotaryEncoder(A_PIN, B_PIN, OK_BUTTON, CANCEL_BUTTON, enc_pipe2)
     gui = GUI(length)
 

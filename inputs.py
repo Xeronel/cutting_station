@@ -9,8 +9,9 @@ from reportlab.pdfbase.ttfonts import TTFont
 
 
 class Inputs(Thread):
-    def __init__(self, buttons, sounds, length, lock):
+    def __init__(self, ok, cancel, buttons, sounds, length, lock):
         Thread.__init__(self)
+
         # Uline 3in x 1in direct thermal label
         self.lblSize = (216, 72)
 
@@ -20,6 +21,8 @@ class Inputs(Thread):
             f = TTFont(font, 'fonts/' + font + '.ttf')
             registerFont(f)
 
+        self.ok = ok
+        self.cancel = cancel
         self.buttons = buttons
         self.sounds = sounds
         self.counter = 0
@@ -76,7 +79,8 @@ class Inputs(Thread):
                     self.update_gui()
                     self.buttons[button] = True
                     self.beep(button)
-                    self.print_label()
+                    if button == self.ok:
+                        self.print_label()
                 elif not pressed and prev_state is True:
                     self.buttons[button] = False
             sleep(0.1)
