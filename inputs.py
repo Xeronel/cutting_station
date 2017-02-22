@@ -1,12 +1,25 @@
 from threading import Thread
 import RPi.GPIO as GPIO
-from os import system
+from os import system, devnull
 from time import sleep
+from subprocess import call
+from reportlab.pdfgen import canvas
+from reportlab.pdfbase.pdfmetrics import registerFont
+from reportlab.pdfbase.ttfonts import TTFont
 
 
 class Inputs(Thread):
     def __init__(self, buttons, sounds, length, lock):
         Thread.__init__(self)
+        # Uline 3in x 1in direct thermal label
+        self.lblSize = (216, 72)
+
+        # Register fonts
+        fonts = ['OpenSans-Bold', 'OpenSans-Regular']
+        for font in fonts:
+            f = TTFont(font, 'fonts/' + font + '.ttf')
+            registerFont(f)
+
         self.buttons = buttons
         self.sounds = sounds
         self.counter = 0
@@ -29,6 +42,31 @@ class Inputs(Thread):
         self.counter += count
         self.update_gui()
 
+    def print_label(self):
+        c = canvas.Canvas('/tmp/examplelabel.pdf', pagesize=self.lblSize)
+        width = self.lblSize[0]
+        x_offset = 4
+
+        # Draw Footage
+        c.setFont('OpenSans-Bold', 16)
+        c.drawString(x_offset, 56, "30'")
+
+        # Draw description and part number
+        c.setFont('OpenSans-Regular', 12)
+        c.drawString(x_offset, 32, '12/2 ROMEX')
+        c.drawString(x_offset, 6, '93512230R')
+
+        # Draw serial number
+        lc_width = c.stringWidth('L1C1', 'OpenSans-Regular', 12)
+        c.drawString(width - lc_width - 6, 32, "L1C1")
+
+        # Finalize page and save file
+        c.showPage()
+        c.save()
+        call(['/usr/bin/lp', '/tmp/examplelabel.pdf'],
+             stdout=open(devnull, 'w'),
+             close_fds=True)
+
     def run(self):
         while True:
             for button, prev_state in self.buttons.items():
@@ -38,7 +76,7 @@ class Inputs(Thread):
                     self.update_gui()
                     self.buttons[button] = True
                     self.beep(button)
-                    # print_test_label(button)
+                    self.print_label()
                 elif not pressed and prev_state is True:
                     self.buttons[button] = False
             sleep(0.1)
