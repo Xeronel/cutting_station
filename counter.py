@@ -1,7 +1,6 @@
 #!/usr/bin/python2.7
 import RPi.GPIO as GPIO
-from encoder import RotaryEncoder, RotaryEncoderProcess
-from time import sleep
+from encoder import RotaryEncoder
 import os
 from os import system
 import socket
@@ -9,8 +8,7 @@ import fcntl
 import struct
 from sdlgui import GUI
 from multiprocessing import Manager, Lock, Pipe
-from ctypes import c_int, c_char_p
-from threaded_counter import UpdateCounter
+from ctypes import c_char_p
 from inputs import Inputs
 
 
@@ -64,21 +62,16 @@ def print_test_label(channel):
 
 
 if __name__ == '__main__':
-    #update_counter = UpdateCounter(lock, phase_count, encoder)
-
     enc_pipe1, enc_pipe2 = Pipe()
-    gui_pipe1, gui_pipe2 = Pipe()
 
-    inputs = Inputs(buttons, sounds, gui_pipe1)
-    encoder = RotaryEncoderProcess(A_PIN, B_PIN, enc_pipe2)
-    gui = GUI(gui_pipe2)
+    inputs = Inputs(buttons, sounds, length, lock)
+    encoder = RotaryEncoder(A_PIN, B_PIN, OK_BUTTON, CANCEL_BUTTON, enc_pipe2)
+    gui = GUI(length)
 
-    print(os.getpid())
     print(get_ip_address('eth0'))
+    print("Main: %s" % os.getpid())
 
     try:
-        #update_counter.start()
-        #inputs.start()
         encoder.start()
         inputs.start()
         gui.start()
