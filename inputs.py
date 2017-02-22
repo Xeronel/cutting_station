@@ -5,12 +5,13 @@ from time import sleep
 
 
 class Inputs(Thread):
-    def __init__(self, buttons, sounds, gui_conn):
+    def __init__(self, buttons, sounds, length, lock):
         Thread.__init__(self)
         self.buttons = buttons
         self.sounds = sounds
         self.counter = 0
-        self.gui_conn = gui_conn
+        self.length = length
+        self.lock = lock
 
     def beep(self, channel):
         if channel in self.sounds:
@@ -20,14 +21,13 @@ class Inputs(Thread):
         # Update GUI
         feet, counter = divmod(self.counter, 600)
         inches = int(counter) / 50
-        self.gui_conn.send("Feet: %s, Inches %s" % (feet, inches))
+        self.lock.acquire()
+        self.length.value = "Feet: %s, Inches %s" % (feet, inches)
+        self.lock.release()
 
     def add_count(self, count):
         self.counter += count
         self.update_gui()
-
-    def get_count(self):
-        return self.counter
 
     def run(self):
         while True:

@@ -1,28 +1,19 @@
 import os
 os.environ["PYSDL2_DLL_PATH"] = os.path.dirname(os.path.abspath(__file__))
-import sdl2, sdl2.ext
+import sdl2, sdl2.ext, time
 from multiprocessing import Process
 
 
 class GUI(Process):
-    def __init__(self, conn):
+    def __init__(self, length):
         Process.__init__(self)
         self.window = None
         self.renderer = None
         self.factory = None
         self.font_manager = sdl2.ext.FontManager(font_path='fonts/OpenSans-Regular.ttf', size=90)
-        self.conn = conn
-        self.length = "Feet: 0, Inches: 0"
+        self.last_length = ""
+        self.length = length
         self.counter = 0
-
-    def render_length(self):
-        feet, counter = divmod(self.counter, 600)
-        inches = int(counter) / 50
-
-        if self.counter < 0:
-            return "Feet: %s, Inches: %s" % (0, 0)
-        else:
-            return "Feet: %s, Inches: %s" % (feet, inches)
 
     def start_sdl(self):
         sdl2.ext.init()
@@ -36,8 +27,15 @@ class GUI(Process):
         print("SDL pid: %s" % os.getpid())
         self.start_sdl()
         while True:
-            self.renderer.clear(sdl2.ext.Color(0, 0, 0))
-            text = self.factory.from_text(self.length, fontmanager=self.font_manager)
-            self.renderer.copy(text, dstrect=(0, 0, text.size[0], text.size[1]))
-            self.renderer.present()
-            self.length = self.conn.recv()
+            # Get length from shared memory
+            length = self.length.value
+
+            # If it's changed render the new length
+            if length != self.last_length:
+                self.renderer.clear(sdl2.ext.Color(0, 0, 0))
+                text = self.factory.from_text(length, fontmanager=self.font_manager)
+                self.renderer.copy(text, dstrect=(0, 0, text.size[0], text.size[1]))
+                self.renderer.present()
+
+            self.last_length = length
+            time.sleep(0.1)
