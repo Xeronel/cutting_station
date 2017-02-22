@@ -1,6 +1,6 @@
 from multiprocessing import Process
 import RPi.GPIO as GPIO
-import os
+from os import getpid
 
 
 class RotaryEncoder(Process):
@@ -26,7 +26,7 @@ class RotaryEncoder(Process):
         self.count = 0
 
     def run(self):
-        print("Encoder: %s" % os.getpid())
+        print("Encoder: %s" % getpid())
         # Initialize variables to the encoder's current state
         self.a_phase = GPIO.input(self.a_pin)
         self.b_phase = GPIO.input(self.b_pin)
