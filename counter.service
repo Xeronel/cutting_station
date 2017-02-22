@@ -1,0 +1,14 @@
+[Unit]
+Description=Wire Counter Service
+After=display-manager.service
+
+[Service]
+User=pi
+WorkingDirectory=/home/pi/cutting_station
+LimitRTPRIO=99
+Environment=DISPLAY=:0
+ExecStart=/home/pi/cutting_station/counter.py
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
