@@ -30,6 +30,7 @@ class GUI(Process):
         self.window.show()
         self.renderer = sdl2.ext.Renderer(self.window)
         self.factory = sdl2.ext.SpriteFactory(renderer=self.renderer)
+        sdl2.SDL_ShowCursor(0)
 
     def run(self):
         print("SDL pid: %s" % os.getpid())
