@@ -51,10 +51,14 @@ class Inputs(Thread):
         if channel in self.sounds:
             system('mpg123 -q %s &' % self.sounds[channel])
 
-    def update_gui(self):
-        # Update GUI
+    def get_length(self):
         feet, counter = divmod(self.counter, 600)
         inches = int(counter) / 50
+        return feet, inches
+
+    def update_gui(self):
+        feet, inches = self.get_length()
+        # Update GUI
         self.lock.acquire()
         self.length.value = "Feet: %s, Inches %s" % (feet, inches)
         self.lock.release()
@@ -64,6 +68,7 @@ class Inputs(Thread):
         self.update_gui()
 
     def create_label(self):
+        feet, inches = self.get_length()
         self.cut_counter += 1
         c = canvas.Canvas(self.label, pagesize=self.lblSize)
         width = self.lblSize[0]
@@ -71,12 +76,12 @@ class Inputs(Thread):
 
         # Draw Footage
         c.setFont('OpenSans-Bold', 16)
-        c.drawString(x_offset, 56, "30'")
+        c.drawString(x_offset, 56, "%s'" % feet)
 
         # Draw description and part number
         c.setFont('OpenSans-Regular', 12)
         c.drawString(x_offset, 32, '12/2 ROMEX')
-        c.drawString(x_offset, 6, '93512230R')
+        c.drawString(x_offset, 6, '935122%sR' % feet)
 
         # Draw serial number
         lc_width = c.stringWidth('L1C%s' % self.cut_counter, 'OpenSans-Regular', 12)
@@ -102,16 +107,16 @@ class Inputs(Thread):
             for button, prev_state in self.buttons.items():
                 pressed = GPIO.input(button)
                 if pressed and prev_state is False:
-                    self.counter = 0
-                    self.update_gui()
-                    self.buttons[button] = True
-                    self.beep(button)
-
                     if button == self.ok_button:
                         self.print_label()
 
                     if button == self.reprint_button:
                         self.reprint_label()
+
+                    self.counter = 0
+                    self.update_gui()
+                    self.buttons[button] = True
+                    self.beep(button)
                 elif not pressed and prev_state is True:
                     self.buttons[button] = False
             sleep(0.1)
