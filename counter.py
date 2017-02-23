@@ -1,11 +1,13 @@
 #!/usr/bin/python2.7
-import fcntl, os, socket, struct, signal
+import fcntl
+import os
+import signal
+import socket
+import struct
 import RPi.GPIO as GPIO
 from ctypes import c_char_p
 from multiprocessing import Manager, Lock, Pipe
-from cuttingstation import CuttingStation
-from encoder import RotaryEncoder
-from gui import GUI
+from cuttingstation import CuttingStation, RotaryEncoder, GUI
 
 
 # GPIO inputs

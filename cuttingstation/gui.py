@@ -7,7 +7,6 @@ from multiprocessing import Process
 class GUI(Process):
     def __init__(self, length):
         Process.__init__(self)
-
         self.window = None
         self.renderer = None
         self.factory = None

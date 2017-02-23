@@ -7,7 +7,6 @@ from os import devnull
 class RotaryEncoder(Process):
     def __init__(self, a_pin, b_pin, ok_button, cancel_button, pipe):
         Process.__init__(self)
-
         self.running = False
         self.pipe = pipe
 
