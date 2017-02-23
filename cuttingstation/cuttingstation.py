@@ -8,7 +8,7 @@ from reportlab.pdfbase.pdfmetrics import registerFont
 from reportlab.pdfbase.ttfonts import TTFont
 
 
-class Counter(Thread):
+class CuttingStation(Thread):
     def __init__(self, ok_button, cancel_button, reprint_button, length, lock):
         Thread.__init__(self)
         self.running = False

@@ -3,7 +3,7 @@ import fcntl, os, socket, struct, signal
 import RPi.GPIO as GPIO
 from ctypes import c_char_p
 from multiprocessing import Manager, Lock, Pipe
-from cuttingstation import Counter
+from cuttingstation import CuttingStation
 from encoder import RotaryEncoder
 from gui import GUI
 
@@ -56,7 +56,7 @@ def cleanup():
     enc_pipe1.close()
     enc_pipe2.close()
     # Exit counter
-    counter.terminate()
+    cut_station.terminate()
     # Exit GUI
     gui.terminate()
     GPIO.cleanup()
@@ -65,7 +65,7 @@ def cleanup():
 if __name__ == '__main__':
     enc_pipe1, enc_pipe2 = Pipe()
 
-    counter = Counter(OK_BUTTON, CANCEL_BUTTON, REPRINT_BUTTON, length, lock)
+    cut_station = CuttingStation(OK_BUTTON, CANCEL_BUTTON, REPRINT_BUTTON, length, lock)
     encoder = RotaryEncoder(A_PIN, B_PIN, OK_BUTTON, CANCEL_BUTTON, enc_pipe2)
     gui = GUI(length)
 
@@ -77,12 +77,12 @@ if __name__ == '__main__':
 
     try:
         encoder.start()
-        counter.start()
+        cut_station.start()
         gui.start()
 
         while running:
             if enc_pipe1.poll(0.1):
-                counter.add_count(enc_pipe1.recv())
+                cut_station.add_count(enc_pipe1.recv())
 
         cleanup()
     except KeyboardInterrupt:
