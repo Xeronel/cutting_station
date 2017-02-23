@@ -5,7 +5,7 @@ import os
 import socket
 import fcntl
 import struct
-from sdlgui import GUI
+from gui import GUI
 from multiprocessing import Manager, Lock, Pipe
 from ctypes import c_char_p
 from inputs import Inputs
