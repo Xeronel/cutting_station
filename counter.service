@@ -4,8 +4,9 @@ After=display-manager.service
 
 [Service]
 User=pi
-WorkingDirectory=/home/pi/cutting_station
 LimitRTPRIO=99
+KillMode=process
+WorkingDirectory=/home/pi/cutting_station
 Environment=DISPLAY=:0
 ExecStart=/home/pi/cutting_station/counter.py
 Restart=always

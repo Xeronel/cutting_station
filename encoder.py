@@ -1,5 +1,6 @@
-from multiprocessing import Process
+import signal
 import RPi.GPIO as GPIO
+from multiprocessing import Process
 from subprocess import call
 from os import devnull
 
@@ -7,6 +8,8 @@ from os import devnull
 class RotaryEncoder(Process):
     def __init__(self, a_pin, b_pin, ok_button, cancel_button, pipe):
         Process.__init__(self)
+
+        self.running = False
         self.pipe = pipe
 
         # Buttons that should reset the count
@@ -22,12 +25,13 @@ class RotaryEncoder(Process):
         self.b_phase = 0
         self.last_a_phase = 0
         self.last_b_phase = 0
-
-        # Initialize counter
         self.count = 0
 
     def run(self):
+        self.running = True
         print("Encoder: %s" % self.pid)
+
+        # Set priority to real-time and scheduler to fifo
         call(['chrt', '-f', '-p', '99', '%s' % self.pid],
              stdout=open(devnull, 'w'),
              close_fds=True)
@@ -38,7 +42,7 @@ class RotaryEncoder(Process):
         self.last_a_phase = self.a_phase
         self.last_b_phase = self.b_phase
 
-        while True:
+        while self.running:
             # Get the encoder's current state
             self.a_phase = GPIO.input(self.a_pin)
             self.b_phase = GPIO.input(self.b_pin)
@@ -62,3 +66,7 @@ class RotaryEncoder(Process):
 
             if GPIO.input(self.ok) or GPIO.input(self.cancel):
                 self.count = 0
+
+            # If a message is received then exit
+            if self.pipe.poll():
+                self.running = False

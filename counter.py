@@ -1,24 +1,21 @@
 #!/usr/bin/python2.7
+import fcntl, os, socket, struct, signal
 import RPi.GPIO as GPIO
-from encoder import RotaryEncoder
-import os
-import socket
-import fcntl
-import struct
-from gui import GUI
-from multiprocessing import Manager, Lock, Pipe
 from ctypes import c_char_p
-from inputs import Inputs
+from multiprocessing import Manager, Lock, Pipe
+from cuttingstation import Counter
+from encoder import RotaryEncoder
+from gui import GUI
 
 
-# Setup constants
+# GPIO inputs
 OK_BUTTON = 4
 CANCEL_BUTTON = 17
 REPRINT_BUTTON = 27
 A_PIN = 22
 B_PIN = 23
 
-# Configure GPIO
+# GPIO Setup
 GPIO.setmode(GPIO.BCM)
 GPIO.setup(OK_BUTTON, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
 GPIO.setup(CANCEL_BUTTON, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
@@ -26,14 +23,17 @@ GPIO.setup(REPRINT_BUTTON, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
 GPIO.setup(A_PIN, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 GPIO.setup(B_PIN, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 
-# Events
+# GPIO Events
 GPIO.add_event_detect(A_PIN, GPIO.FALLING)
 GPIO.add_event_detect(B_PIN, GPIO.FALLING)
 
-# Global Vars
+# Shared memory for gui and counter
 manager = Manager()
 length = manager.Value(c_char_p, "Feet: 0, Inches: 0")
 lock = Lock()
+
+# Exit handler
+running = True
 
 
 def get_ip_address(ifname):
@@ -45,24 +45,46 @@ def get_ip_address(ifname):
     )[20:24])
 
 
+def stop(signum, frame):
+    global running
+    running = False
+
+
+def cleanup():
+    # Exit encoder
+    enc_pipe1.send('exit')
+    enc_pipe1.close()
+    enc_pipe2.close()
+    # Exit counter
+    counter.terminate()
+    # Exit GUI
+    gui.terminate()
+    GPIO.cleanup()
+
+
 if __name__ == '__main__':
     enc_pipe1, enc_pipe2 = Pipe()
 
-    inputs = Inputs(OK_BUTTON, CANCEL_BUTTON, REPRINT_BUTTON, length, lock)
+    counter = Counter(OK_BUTTON, CANCEL_BUTTON, REPRINT_BUTTON, length, lock)
     encoder = RotaryEncoder(A_PIN, B_PIN, OK_BUTTON, CANCEL_BUTTON, enc_pipe2)
     gui = GUI(length)
+
+    # Handle exit gracefully
+    signal.signal(signal.SIGTERM, stop)
 
     print(get_ip_address('eth0'))
     print("Main: %s" % os.getpid())
 
     try:
         encoder.start()
-        inputs.start()
+        counter.start()
         gui.start()
 
-        while True:
-            inputs.add_count(enc_pipe1.recv())
+        while running:
+            if enc_pipe1.poll(0.1):
+                counter.add_count(enc_pipe1.recv())
 
+        cleanup()
     except KeyboardInterrupt:
-        GPIO.cleanup()
+        cleanup()
 

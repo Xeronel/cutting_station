@@ -8,9 +8,10 @@ from reportlab.pdfbase.pdfmetrics import registerFont
 from reportlab.pdfbase.ttfonts import TTFont
 
 
-class Inputs(Thread):
+class Counter(Thread):
     def __init__(self, ok_button, cancel_button, reprint_button, length, lock):
         Thread.__init__(self)
+        self.running = False
 
         # Uline 3in x 1in direct thermal label
         self.lblSize = (216, 72)
@@ -22,7 +23,7 @@ class Inputs(Thread):
             registerFont(f)
 
         # Label location
-        self.label = '/tmp/label.pdf'
+        self._lbl_path = '/tmp/label.pdf'
 
         # Keep track of buttons last state
         # button, prev_state
@@ -70,7 +71,7 @@ class Inputs(Thread):
     def create_label(self):
         feet, inches = self.get_length()
         self.cut_counter += 1
-        c = canvas.Canvas(self.label, pagesize=self.lblSize)
+        c = canvas.Canvas(self._lbl_path, pagesize=self.lblSize)
         width = self.lblSize[0]
         x_offset = 4
 
@@ -93,17 +94,21 @@ class Inputs(Thread):
 
     def print_label(self):
         self.create_label()
-        call(['/usr/bin/lp', self.label],
+        call(['/usr/bin/lp', self._lbl_path],
              stdout=open(devnull, 'w'),
              close_fds=True)
 
     def reprint_label(self):
-        call(['/usr/bin/lp', self.label],
+        call(['/usr/bin/lp', self._lbl_path],
              stdout=open(devnull, 'w'),
              close_fds=True)
 
+    def terminate(self):
+        self.running = False
+
     def run(self):
-        while True:
+        self.running = True
+        while self.running:
             for button, prev_state in self.buttons.items():
                 pressed = GPIO.input(button)
                 if pressed and prev_state is False:

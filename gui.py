@@ -7,6 +7,7 @@ from multiprocessing import Process
 class GUI(Process):
     def __init__(self, length):
         Process.__init__(self)
+
         self.window = None
         self.renderer = None
         self.factory = None
@@ -27,8 +28,12 @@ class GUI(Process):
         print("SDL pid: %s" % self.pid)
         self.start_sdl()
         while True:
-            # Get length from shared memory
-            length = self.length.value
+            # Try to get length from shared memory
+            try:
+                length = self.length.value
+            except IOError:
+                # If the memory manager has closed this process can not operate
+                break
 
             # If it's changed render the new length
             if length != self.last_length:
