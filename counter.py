@@ -14,26 +14,15 @@ from inputs import Inputs
 # Setup constants
 OK_BUTTON = 4
 CANCEL_BUTTON = 17
+REPRINT_BUTTON = 27
 A_PIN = 22
 B_PIN = 23
-
-# Keep track of buttons last state
-# button, prev_state
-buttons = {
-    OK_BUTTON: False,
-    CANCEL_BUTTON: False
-}
-
-# Channel sound maps
-sounds = {
-    OK_BUTTON: "sound/success.mp3",
-    CANCEL_BUTTON: "sound/error.mp3"
-}
 
 # Configure GPIO
 GPIO.setmode(GPIO.BCM)
 GPIO.setup(OK_BUTTON, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
 GPIO.setup(CANCEL_BUTTON, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
+GPIO.setup(REPRINT_BUTTON, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
 GPIO.setup(A_PIN, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 GPIO.setup(B_PIN, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 
@@ -59,7 +48,7 @@ def get_ip_address(ifname):
 if __name__ == '__main__':
     enc_pipe1, enc_pipe2 = Pipe()
 
-    inputs = Inputs(OK_BUTTON, CANCEL_BUTTON, buttons, sounds, length, lock)
+    inputs = Inputs(OK_BUTTON, CANCEL_BUTTON, REPRINT_BUTTON, length, lock)
     encoder = RotaryEncoder(A_PIN, B_PIN, OK_BUTTON, CANCEL_BUTTON, enc_pipe2)
     gui = GUI(length)
 

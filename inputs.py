@@ -9,7 +9,7 @@ from reportlab.pdfbase.ttfonts import TTFont
 
 
 class Inputs(Thread):
-    def __init__(self, ok, cancel, buttons, sounds, length, lock):
+    def __init__(self, ok_button, cancel_button, reprint_button, length, lock):
         Thread.__init__(self)
 
         # Uline 3in x 1in direct thermal label
@@ -21,13 +21,31 @@ class Inputs(Thread):
             f = TTFont(font, 'fonts/' + font + '.ttf')
             registerFont(f)
 
-        self.ok = ok
-        self.cancel = cancel
-        self.buttons = buttons
-        self.sounds = sounds
+        # Label location
+        self.label = '/tmp/label.pdf'
+
+        # Keep track of buttons last state
+        # button, prev_state
+        self.buttons = {
+            ok_button: False,
+            cancel_button: False,
+            reprint_button: False
+        }
+
+        # Channel sound maps
+        self.sounds = {
+            ok_button: "sound/success.mp3",
+            cancel_button: "sound/error.mp3",
+            reprint_button: "sound/boop.mp3"
+        }
+
+        self.ok_button = ok_button
+        self.cancel_button = cancel_button
+        self.reprint_button = reprint_button
         self.counter = 0
         self.length = length
         self.lock = lock
+        self.cut_counter = 0
 
     def beep(self, channel):
         if channel in self.sounds:
@@ -45,8 +63,9 @@ class Inputs(Thread):
         self.counter += count
         self.update_gui()
 
-    def print_label(self):
-        c = canvas.Canvas('/tmp/examplelabel.pdf', pagesize=self.lblSize)
+    def create_label(self):
+        self.cut_counter += 1
+        c = canvas.Canvas(self.label, pagesize=self.lblSize)
         width = self.lblSize[0]
         x_offset = 4
 
@@ -60,13 +79,21 @@ class Inputs(Thread):
         c.drawString(x_offset, 6, '93512230R')
 
         # Draw serial number
-        lc_width = c.stringWidth('L1C1', 'OpenSans-Regular', 12)
-        c.drawString(width - lc_width - 6, 32, "L1C1")
+        lc_width = c.stringWidth('L1C%s' % self.cut_counter, 'OpenSans-Regular', 12)
+        c.drawString(width - lc_width - 6, 32, 'L1C%s' % self.cut_counter)
 
         # Finalize page and save file
         c.showPage()
         c.save()
-        call(['/usr/bin/lp', '/tmp/examplelabel.pdf'],
+
+    def print_label(self):
+        self.create_label()
+        call(['/usr/bin/lp', self.label],
+             stdout=open(devnull, 'w'),
+             close_fds=True)
+
+    def reprint_label(self):
+        call(['/usr/bin/lp', self.label],
              stdout=open(devnull, 'w'),
              close_fds=True)
 
@@ -79,8 +106,12 @@ class Inputs(Thread):
                     self.update_gui()
                     self.buttons[button] = True
                     self.beep(button)
-                    if button == self.ok:
+
+                    if button == self.ok_button:
                         self.print_label()
+
+                    if button == self.reprint_button:
+                        self.reprint_label()
                 elif not pressed and prev_state is True:
                     self.buttons[button] = False
             sleep(0.1)
