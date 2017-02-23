@@ -1,4 +1,3 @@
-import signal
 import RPi.GPIO as GPIO
 from multiprocessing import Process
 from subprocess import call
