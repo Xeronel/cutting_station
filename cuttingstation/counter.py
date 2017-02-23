@@ -46,7 +46,15 @@ class Counter(Thread):
         self.counter = 0
         self.length = length
         self.lock = lock
+
+        # Label vars
         self.cut_counter = 0
+        self._left = 4
+        self._top = 56
+        self._middle = 32
+        self._bottom = 6
+        self.regular = 'OpenSans-Regular'
+        self.bold = 'OpenSans-Bold'
 
     def beep(self, channel):
         if channel in self.sounds:
@@ -68,32 +76,56 @@ class Counter(Thread):
         self.counter += count
         self.update_gui()
 
-    def create_label(self):
-        feet, inches = self.get_length()
+    def _new_lbl(self, feet):
         self.cut_counter += 1
         c = canvas.Canvas(self._lbl_path, pagesize=self.lblSize)
-        width = self.lblSize[0]
-        x_offset = 4
 
         # Draw Footage
-        c.setFont('OpenSans-Bold', 16)
-        c.drawString(x_offset, 56, "%s'" % feet)
+        c.setFont(self.bold, 16)
+        c.drawString(self._left, self._top, "%s'" % feet)
 
-        # Draw description and part number
-        c.setFont('OpenSans-Regular', 12)
-        c.drawString(x_offset, 32, '12/2 ROMEX')
-        c.drawString(x_offset, 6, '935122%sR' % feet)
+        # Draw description
+        c.setFont(self.regular, 12)
+        c.drawString(self._left, self._middle, '12/2 ROMEX')
 
         # Draw serial number
-        lc_width = c.stringWidth('L1C%s' % self.cut_counter, 'OpenSans-Regular', 12)
-        c.drawString(width - lc_width - 6, 32, 'L1C%s' % self.cut_counter)
+        width = self.lblSize[0]
+        lc_width = c.stringWidth('L1C%s' % self.cut_counter, self.regular, 12)
+        c.drawString(width - lc_width - 6, self._middle, 'L1C%s' % self.cut_counter)
+
+        return c
+
+    def create_cut_label(self):
+        feet, inches = self.get_length()
+        c = self._new_lbl(feet)
+
+        # Draw part number
+        c.setFont(self.regular, 12)
+        c.drawString(self._left, self._bottom, '935122%sR' % feet)
 
         # Finalize page and save file
         c.showPage()
         c.save()
 
-    def print_label(self):
-        self.create_label()
+    def create_cancel_label(self):
+        feet, inches = self.get_length()
+        c = self._new_lbl(feet)
+
+        # Draw inches
+        ft_size = c.stringWidth("%s'" % feet, self.bold, 16)
+        c.setFont(self.bold, 16)
+        c.drawString(ft_size, self._top, '  %s"' % inches)
+
+        # Draw description
+        c.setFont(self.regular, 12)
+        c.drawString(self._left, self._bottom, "Canceled cut")
+
+        # Finalize and save
+        c.showPage()
+        c.save()
+
+    def print_label(self, lbl):
+        lbl()
         call(['/usr/bin/lp', self._lbl_path],
              stdout=open(devnull, 'w'),
              close_fds=True)
@@ -113,7 +145,10 @@ class Counter(Thread):
                 pressed = GPIO.input(button)
                 if pressed and prev_state is False:
                     if button == self.ok_button:
-                        self.print_label()
+                        self.print_label(self.create_cut_label)
+
+                    if button == self.cancel_button:
+                        self.print_label(self.create_cancel_label)
 
                     if button == self.reprint_button:
                         self.reprint_label()
