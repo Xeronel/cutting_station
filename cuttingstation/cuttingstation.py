@@ -72,8 +72,10 @@ class CuttingStation(Thread):
         self.length.value = "Feet: %s, Inches %s" % (feet, inches)
         self.lock.release()
 
-    def add_count(self, count):
+    def update_count(self, count):
         self.counter += count
+        if self.counter < 0:
+            self.counter = 0
         self.update_gui()
 
     def _new_lbl(self, feet):

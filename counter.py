@@ -84,7 +84,7 @@ if __name__ == '__main__':
 
         while running:
             if enc_pipe1.poll(0.1):
-                cut_station.add_count(enc_pipe1.recv())
+                cut_station.update_count(enc_pipe1.recv())
 
         cleanup()
     except KeyboardInterrupt:
