@@ -68,7 +68,7 @@ class CuttingStation(Thread):
         feet, inches = self.get_length()
         # Update GUI
         self.lock.acquire()
-        self.length.value = "Feet: %s, Inches %s" % (feet, inches)
+        self.length.value = "Feet: %s, Inches: %s" % (feet, inches)
         self.lock.release()
 
     def update_count(self, inch):

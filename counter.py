@@ -15,16 +15,19 @@ from serial import Serial
 OK_BUTTON = 4
 CANCEL_BUTTON = 17
 REPRINT_BUTTON = 27
+RESET_PIN = 2
 A_PIN = 22
 B_PIN = 23
 
 # GPIO Setup
+GPIO.setwarnings(False)
 GPIO.setmode(GPIO.BCM)
 GPIO.setup(OK_BUTTON, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
 GPIO.setup(CANCEL_BUTTON, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
 GPIO.setup(REPRINT_BUTTON, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
 GPIO.setup(A_PIN, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 GPIO.setup(B_PIN, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+GPIO.setup(RESET_PIN, GPIO.OUT, initial=GPIO.LOW)
 
 # GPIO Events
 GPIO.add_event_detect(A_PIN, GPIO.FALLING)
@@ -70,7 +73,7 @@ if __name__ == '__main__':
 
     cut_station = CuttingStation(OK_BUTTON, CANCEL_BUTTON, REPRINT_BUTTON, length, lock)
     # encoder = RotaryEncoder(A_PIN, B_PIN, OK_BUTTON, CANCEL_BUTTON, enc_pipe2)
-    encoder = Serial('/dev/ttyAMA0', 9600, timeout=1)
+    encoder = Serial('/dev/ttyUSB0', 9600, timeout=1)
     gui = GUI(length)
 
     # Handle exit gracefully
@@ -88,7 +91,10 @@ if __name__ == '__main__':
                 # cut_station.update_count(enc_pipe1.recv())
             line = encoder.readline()
             if line:
-                cut_station.update_count(int(line))
+                try:
+                    cut_station.update_count(int(line))
+                except ValueError:
+                    pass
 
         cleanup()
     except KeyboardInterrupt:
