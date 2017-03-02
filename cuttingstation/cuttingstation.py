@@ -159,6 +159,8 @@ class CuttingStation(Thread):
                     self.update_gui()
                     self.buttons[button] = True
                     self.beep(button)
+                    # Debounce time
+                    sleep(0.3)
                 elif not pressed and prev_state is True:
                     self.buttons[button] = False
             sleep(0.1)
