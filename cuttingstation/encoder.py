@@ -2,6 +2,7 @@ import RPi.GPIO as GPIO
 from multiprocessing import Process
 from subprocess import call
 from os import devnull
+import serial
 
 
 class RotaryEncoder(Process):
@@ -68,3 +69,34 @@ class RotaryEncoder(Process):
             # If a message is received then exit
             if self.pipe.poll():
                 self.running = False
+
+
+class ArduinoEncoder(Process):
+    def __init__(self, ok_button, cancel_button, pipe):
+        Process.__init__(self)
+        self.running = False
+        self.pipe = pipe
+        self.serial = serial.Serial('COM4', 9600, timeout=1)
+
+        # Buttons that should reset the count
+        self.ok = ok_button
+        self.cancel = cancel_button
+        self.inches = 0
+
+    def run(self):
+        self.running = True
+        print("Encoder: %s" % self.pid)
+
+        while self.running:
+            # Try to get data from the encoder
+            operator = self.serial.readline()
+
+            if operator == '+':
+                self.inches += 1
+            elif operator == '-':
+                self.inches -= 1
+
+            # If a message is received then exit
+            if self.pipe.poll():
+                self.running = False
+            sleep(0.001)

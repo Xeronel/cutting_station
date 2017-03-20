@@ -8,6 +8,7 @@ import RPi.GPIO as GPIO
 from ctypes import c_char_p
 from multiprocessing import Manager, Lock, Pipe
 from cuttingstation import CuttingStation, RotaryEncoder, GUI
+from serial import Serial
 
 
 # GPIO inputs
@@ -68,7 +69,8 @@ if __name__ == '__main__':
     enc_pipe1, enc_pipe2 = Pipe()
 
     cut_station = CuttingStation(OK_BUTTON, CANCEL_BUTTON, REPRINT_BUTTON, length, lock)
-    encoder = RotaryEncoder(A_PIN, B_PIN, OK_BUTTON, CANCEL_BUTTON, enc_pipe2)
+    # encoder = RotaryEncoder(A_PIN, B_PIN, OK_BUTTON, CANCEL_BUTTON, enc_pipe2)
+    encoder = Serial('COM6', 9600, timeout=1)
     gui = GUI(length)
 
     # Handle exit gracefully
@@ -83,8 +85,11 @@ if __name__ == '__main__':
         gui.start()
 
         while running:
-            if enc_pipe1.poll(0.1):
-                cut_station.update_count(enc_pipe1.recv())
+            # if enc_pipe1.poll(0.1):
+                # cut_station.update_count(enc_pipe1.recv())
+            line = encoder.readline()
+            if line:
+                cut_station.update_count(int(line))
 
         cleanup()
     except KeyboardInterrupt:

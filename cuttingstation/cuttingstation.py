@@ -43,7 +43,7 @@ class CuttingStation(Thread):
         self.ok_button = ok_button
         self.cancel_button = cancel_button
         self.reprint_button = reprint_button
-        self.counter = 0
+        self.inches = 0
         self.length = length
         self.lock = lock
 
@@ -72,10 +72,10 @@ class CuttingStation(Thread):
         self.length.value = "Feet: %s, Inches %s" % (feet, inches)
         self.lock.release()
 
-    def update_count(self, count):
-        self.counter += count
-        if self.counter < 0:
-            self.counter = 0
+    def update_count(self, inch):
+        self.inches += inch
+        if self.inches < 0:
+            self.inches = 0
         self.update_gui()
 
     def _new_lbl(self, feet):
