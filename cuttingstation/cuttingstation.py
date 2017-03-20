@@ -61,8 +61,7 @@ class CuttingStation(Thread):
             system('mpg123 -q %s &' % self.sounds[channel])
 
     def get_length(self):
-        feet, counter = divmod(self.counter, 600)
-        inches = int(counter) / 50
+        feet, inches = divmod(self.inches, 12)
         return feet, inches
 
     def update_gui(self):
@@ -155,7 +154,7 @@ class CuttingStation(Thread):
                     if button == self.reprint_button:
                         self.reprint_label()
 
-                    self.counter = 0
+                    self.inches = 0
                     self.update_gui()
                     self.buttons[button] = True
                     self.beep(button)
