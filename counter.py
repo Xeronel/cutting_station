@@ -80,7 +80,6 @@ if __name__ == '__main__':
     print("Main: %s" % os.getpid())
 
     try:
-        encoder.start()
         cut_station.start()
         gui.start()
 
