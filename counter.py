@@ -70,7 +70,7 @@ if __name__ == '__main__':
 
     cut_station = CuttingStation(OK_BUTTON, CANCEL_BUTTON, REPRINT_BUTTON, length, lock)
     # encoder = RotaryEncoder(A_PIN, B_PIN, OK_BUTTON, CANCEL_BUTTON, enc_pipe2)
-    encoder = Serial('ttyAMA0', 9600, timeout=1)
+    encoder = Serial('/dev/ttyAMA0', 9600, timeout=1)
     gui = GUI(length)
 
     # Handle exit gracefully
