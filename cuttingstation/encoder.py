@@ -76,7 +76,7 @@ class ArduinoEncoder(Process):
         Process.__init__(self)
         self.running = False
         self.pipe = pipe
-        self.serial = serial.Serial('COM4', 9600, timeout=1)
+        self.serial = serial.Serial('ttyAMA0', 9600, timeout=1)
 
         # Buttons that should reset the count
         self.ok = ok_button
