@@ -99,4 +99,3 @@ class ArduinoEncoder(Process):
             # If a message is received then exit
             if self.pipe.poll():
                 self.running = False
-            sleep(0.001)

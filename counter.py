@@ -8,7 +8,8 @@ import RPi.GPIO as GPIO
 from ctypes import c_char_p
 from multiprocessing import Manager, Lock, Pipe
 from cuttingstation import CuttingStation, RotaryEncoder, GUI
-from serial import Serial
+from serial import Serial, SerialException
+from serial.tools import list_ports
 
 
 # GPIO inputs
@@ -22,9 +23,9 @@ B_PIN = 23
 # GPIO Setup
 GPIO.setwarnings(False)
 GPIO.setmode(GPIO.BCM)
-GPIO.setup(OK_BUTTON, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
-GPIO.setup(CANCEL_BUTTON, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
-GPIO.setup(REPRINT_BUTTON, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
+GPIO.setup(OK_BUTTON, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+GPIO.setup(CANCEL_BUTTON, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+GPIO.setup(REPRINT_BUTTON, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 GPIO.setup(A_PIN, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 GPIO.setup(B_PIN, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 GPIO.setup(RESET_PIN, GPIO.OUT, initial=GPIO.LOW)
@@ -42,6 +43,16 @@ lock = Lock()
 running = True
 
 
+def get_encoder():
+    com_ports = list_ports.comports()
+    if com_ports:
+        port = com_ports[0][0]
+        try:
+            return Serial(port, 9600, timeout=1)
+        except SerialException:
+            return None
+r
+
 def get_ip_address(ifname):
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     return socket.inet_ntoa(fcntl.ioctl(
@@ -57,23 +68,14 @@ def stop(signum, frame):
 
 
 def cleanup():
-    # Exit encoder
-    enc_pipe1.send('exit')
-    enc_pipe1.close()
-    enc_pipe2.close()
-    # Exit counter
     cut_station.terminate()
-    # Exit GUI
     gui.terminate()
     GPIO.cleanup()
 
 
 if __name__ == '__main__':
-    enc_pipe1, enc_pipe2 = Pipe()
-
     cut_station = CuttingStation(OK_BUTTON, CANCEL_BUTTON, REPRINT_BUTTON, length, lock)
-    # encoder = RotaryEncoder(A_PIN, B_PIN, OK_BUTTON, CANCEL_BUTTON, enc_pipe2)
-    encoder = Serial('/dev/ttyUSB0', 9600, timeout=1)
+    encoder = get_encoder()
     gui = GUI(length)
 
     # Handle exit gracefully
@@ -87,15 +89,19 @@ if __name__ == '__main__':
         gui.start()
 
         while running:
-            # if enc_pipe1.poll(0.1):
-                # cut_station.update_count(enc_pipe1.recv())
-            line = encoder.readline()
+            try:
+                line = encoder.readline()
+            except (SerialException, AttributeError):
+                if encoder:
+                    encoder.close()
+                encoder = get_encoder()
+                line = 0
+
             if line:
                 try:
                     cut_station.update_count(int(line))
                 except ValueError:
                     pass
-
         cleanup()
     except KeyboardInterrupt:
         cleanup()

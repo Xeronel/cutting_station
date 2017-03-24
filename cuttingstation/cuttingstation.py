@@ -143,7 +143,7 @@ class CuttingStation(Thread):
         self.running = True
         while self.running:
             for button, prev_state in self.buttons.items():
-                pressed = GPIO.input(button)
+                pressed = not GPIO.input(button)
                 if pressed and prev_state is False:
                     if button == self.ok_button:
                         self.print_label(self.create_cut_label)
