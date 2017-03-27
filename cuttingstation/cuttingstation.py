@@ -9,9 +9,10 @@ from reportlab.pdfbase.ttfonts import TTFont
 
 
 class CuttingStation(Thread):
-    def __init__(self, ok_button, cancel_button, reprint_button, length, lock):
+    def __init__(self, ok_button, cancel_button, reprint_button, reset_pin, length, lock):
         Thread.__init__(self)
         self.running = False
+        self.reset_pin = reset_pin
 
         # Uline 3in x 1in direct thermal label
         self.lblSize = (216, 72)
@@ -136,6 +137,11 @@ class CuttingStation(Thread):
              stdout=open(devnull, 'w'),
              close_fds=True)
 
+    def reset_counter(self):
+        GPIO.output(self.reset_pin, GPIO.HIGH)
+        sleep(0.1)
+        GPIO.output(self.reset_pin, GPIO.LOW)
+
     def terminate(self):
         self.running = False
 
@@ -158,8 +164,9 @@ class CuttingStation(Thread):
                     self.update_gui()
                     self.buttons[button] = True
                     self.beep(button)
+                    self.reset_counter()
                     # Debounce time
-                    sleep(0.3)
+                    sleep(0.1)
                 elif not pressed and prev_state is True:
                     self.buttons[button] = False
             sleep(0.1)

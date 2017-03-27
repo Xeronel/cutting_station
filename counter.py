@@ -17,8 +17,6 @@ OK_BUTTON = 4
 CANCEL_BUTTON = 17
 REPRINT_BUTTON = 27
 RESET_PIN = 2
-A_PIN = 22
-B_PIN = 23
 
 # GPIO Setup
 GPIO.setwarnings(False)
@@ -26,13 +24,7 @@ GPIO.setmode(GPIO.BCM)
 GPIO.setup(OK_BUTTON, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 GPIO.setup(CANCEL_BUTTON, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 GPIO.setup(REPRINT_BUTTON, GPIO.IN, pull_up_down=GPIO.PUD_UP)
-GPIO.setup(A_PIN, GPIO.IN, pull_up_down=GPIO.PUD_UP)
-GPIO.setup(B_PIN, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 GPIO.setup(RESET_PIN, GPIO.OUT, initial=GPIO.LOW)
-
-# GPIO Events
-GPIO.add_event_detect(A_PIN, GPIO.FALLING)
-GPIO.add_event_detect(B_PIN, GPIO.FALLING)
 
 # Shared memory for gui and counter
 manager = Manager()
@@ -74,7 +66,7 @@ def cleanup():
 
 
 if __name__ == '__main__':
-    cut_station = CuttingStation(OK_BUTTON, CANCEL_BUTTON, REPRINT_BUTTON, length, lock)
+    cut_station = CuttingStation(OK_BUTTON, CANCEL_BUTTON, REPRINT_BUTTON, RESET_PIN, length, lock)
     encoder = get_encoder()
     gui = GUI(length)
 
