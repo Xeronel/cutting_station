@@ -10,6 +10,7 @@ from multiprocessing import Manager, Lock
 from cuttingstation import CuttingStation, GUI
 from serial import Serial, SerialException
 from serial.tools import list_ports
+from systemd import journal
 
 
 # GPIO inputs
@@ -73,13 +74,13 @@ if __name__ == '__main__':
     # Handle exit gracefully
     signal.signal(signal.SIGTERM, stop)
 
-    print(get_ip_address('eth0'))
-    print("Main: %s" % os.getpid())
+    journal.send(get_ip_address('eth0'))
+    journal.send("Main: %s" % os.getpid())
 
     try:
         cut_station.start()
         gui.start()
-        print("SDL pid: %s" % gui.pid)
+        journal.send("SDL pid: %s" % gui.pid)
 
         while running:
             try:
