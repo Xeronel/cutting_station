@@ -6,8 +6,8 @@ import socket
 import struct
 import RPi.GPIO as GPIO
 from ctypes import c_char_p
-from multiprocessing import Manager, Lock, Pipe
-from cuttingstation import CuttingStation, RotaryEncoder, GUI
+from multiprocessing import Manager, Lock
+from cuttingstation import CuttingStation, GUI
 from serial import Serial, SerialException
 from serial.tools import list_ports
 
@@ -75,6 +75,7 @@ if __name__ == '__main__':
 
     print(get_ip_address('eth0'))
     print("Main: %s" % os.getpid())
+    print("SDL pid: %s" % gui.pid)
 
     try:
         cut_station.start()

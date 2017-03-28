@@ -24,7 +24,6 @@ class GUI(Process):
         sdl2.SDL_ShowCursor(0)
 
     def run(self):
-        print("SDL pid: %s" % self.pid)
         self.start_sdl()
         while True:
             # Try to get length from shared memory
