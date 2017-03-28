@@ -75,11 +75,11 @@ if __name__ == '__main__':
 
     print(get_ip_address('eth0'))
     print("Main: %s" % os.getpid())
-    print("SDL pid: %s" % gui.pid)
 
     try:
         cut_station.start()
         gui.start()
+        print("SDL pid: %s" % gui.pid)
 
         while running:
             try:
