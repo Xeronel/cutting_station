@@ -1,5 +1,3 @@
-import os
-os.environ["PYSDL2_DLL_PATH"] = os.path.dirname(os.path.abspath(__file__))
 import sdl2, sdl2.ext, time
 from multiprocessing import Process
 

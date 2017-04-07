@@ -13,6 +13,9 @@ from serial.tools import list_ports
 from systemd import journal
 
 
+# Setup SDL environment variables
+os.environ["PYSDL2_DLL_PATH"] = os.path.dirname(os.path.abspath(__file__))
+
 # GPIO inputs
 OK_BUTTON = 4
 CANCEL_BUTTON = 17
