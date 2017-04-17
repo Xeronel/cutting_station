@@ -55,7 +55,7 @@ class CuttingStation(Thread):
             self.inches = 0
         self.update_gui()
 
-    def reset_counter(self):
+    def reset_encoder(self):
         GPIO.output(self.reset_pin, GPIO.HIGH)
         sleep(0.1)
         GPIO.output(self.reset_pin, GPIO.LOW)
@@ -82,7 +82,7 @@ class CuttingStation(Thread):
                     self.update_gui()
                     self.buttons[button] = True
                     self.beep(button)
-                    self.reset_counter()
+                    self.reset_encoder()
                     # Debounce time
                     sleep(0.1)
                 elif not pressed and prev_state is True:

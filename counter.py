@@ -7,11 +7,14 @@ import struct
 import RPi.GPIO as GPIO
 from ctypes import c_char_p
 from multiprocessing import Manager, Lock
-from cuttingstation import CuttingStation, GUI
+from cuttingstation import CuttingStation, GUI, Config
 from serial import Serial, SerialException
 from serial.tools import list_ports
 from systemd import journal
 
+
+# Load config file
+config = Config()
 
 # Setup SDL environment variables
 os.environ["PYSDL2_DLL_PATH"] = os.path.dirname(os.path.abspath(__file__))
@@ -102,4 +105,3 @@ if __name__ == '__main__':
         cleanup()
     except KeyboardInterrupt:
         cleanup()
-
