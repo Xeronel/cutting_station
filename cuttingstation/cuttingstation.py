@@ -1,11 +1,8 @@
 from threading import Thread
 import RPi.GPIO as GPIO
-from os import system, devnull
+from os import system
 from time import sleep
-from subprocess import call
-from reportlab.pdfgen import canvas
-from reportlab.pdfbase.pdfmetrics import registerFont
-from reportlab.pdfbase.ttfonts import TTFont
+from labelmaker import LabelTypes, LabelMaker
 
 
 class CuttingStation(Thread):
@@ -13,18 +10,7 @@ class CuttingStation(Thread):
         Thread.__init__(self)
         self.running = False
         self.reset_pin = reset_pin
-
-        # Uline 3in x 1in direct thermal label
-        self.lblSize = (216, 72)
-
-        # Register fonts
-        fonts = ['OpenSans-Bold', 'OpenSans-Regular']
-        for font in fonts:
-            f = TTFont(font, 'fonts/' + font + '.ttf')
-            registerFont(f)
-
-        # Label location
-        self._lbl_path = '/tmp/label.pdf'
+        self.label_maker = LabelMaker()
 
         # Keep track of buttons last state
         # button, prev_state
@@ -48,15 +34,6 @@ class CuttingStation(Thread):
         self.length = length
         self.lock = lock
 
-        # Label vars
-        self.cut_counter = 0
-        self._left = 4
-        self._top = 56
-        self._middle = 32
-        self._bottom = 6
-        self.regular = 'OpenSans-Regular'
-        self.bold = 'OpenSans-Bold'
-
     def beep(self, channel):
         if channel in self.sounds:
             system('mpg123 -q %s &' % self.sounds[channel])
@@ -78,65 +55,6 @@ class CuttingStation(Thread):
             self.inches = 0
         self.update_gui()
 
-    def _new_lbl(self, feet):
-        self.cut_counter += 1
-        c = canvas.Canvas(self._lbl_path, pagesize=self.lblSize)
-
-        # Draw Footage
-        c.setFont(self.bold, 16)
-        c.drawString(self._left, self._top, "%s'" % feet)
-
-        # Draw description
-        c.setFont(self.regular, 12)
-        c.drawString(self._left, self._middle, '12/2 ROMEX')
-
-        # Draw serial number
-        width = self.lblSize[0]
-        lc_width = c.stringWidth('L1C%s' % self.cut_counter, self.regular, 12)
-        c.drawString(width - lc_width - 6, self._middle, 'L1C%s' % self.cut_counter)
-
-        return c
-
-    def create_cut_label(self):
-        feet, inches = self.get_length()
-        c = self._new_lbl(feet)
-
-        # Draw part number
-        c.setFont(self.regular, 12)
-        c.drawString(self._left, self._bottom, '935122%sR' % feet)
-
-        # Finalize page and save file
-        c.showPage()
-        c.save()
-
-    def create_cancel_label(self):
-        feet, inches = self.get_length()
-        c = self._new_lbl(feet)
-
-        # Draw inches
-        ft_size = c.stringWidth("%s'" % feet, self.bold, 16)
-        c.setFont(self.bold, 16)
-        c.drawString(ft_size, self._top, '  %s"' % inches)
-
-        # Draw description
-        c.setFont(self.regular, 12)
-        c.drawString(self._left, self._bottom, "Canceled cut")
-
-        # Finalize and save
-        c.showPage()
-        c.save()
-
-    def print_label(self, lbl):
-        lbl()
-        call(['/usr/bin/lp', self._lbl_path],
-             stdout=open(devnull, 'w'),
-             close_fds=True)
-
-    def reprint_label(self):
-        call(['/usr/bin/lp', self._lbl_path],
-             stdout=open(devnull, 'w'),
-             close_fds=True)
-
     def reset_counter(self):
         GPIO.output(self.reset_pin, GPIO.HIGH)
         sleep(0.1)
@@ -152,13 +70,13 @@ class CuttingStation(Thread):
                 pressed = not GPIO.input(button)
                 if pressed and prev_state is False:
                     if button == self.ok_button:
-                        self.print_label(self.create_cut_label)
+                        self.label_maker.print_label(LabelTypes.cut, *self.get_length())
 
                     if button == self.cancel_button:
-                        self.print_label(self.create_cancel_label)
+                        self.label_maker.print_label(LabelTypes.cancel, *self.get_length())
 
                     if button == self.reprint_button:
-                        self.reprint_label()
+                        self.label_maker.reprint_label()
 
                     self.inches = 0
                     self.update_gui()
