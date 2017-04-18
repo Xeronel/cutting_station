@@ -22,21 +22,24 @@ class GUI(Process):
         sdl2.SDL_ShowCursor(0)
 
     def run(self):
-        self.start_sdl()
-        while True:
-            # Try to get length from shared memory
-            try:
-                length = self.length.value
-            except IOError:
-                # If the memory manager has closed this process can not operate
-                break
+        try:
+            self.start_sdl()
+            while True:
+                # Try to get length from shared memory
+                try:
+                    length = self.length.value
+                except IOError:
+                    # If the memory manager has closed this process can not operate
+                    break
 
-            # If it's changed render the new length
-            if length != self.last_length:
-                self.renderer.clear(sdl2.ext.Color(0, 0, 0))
-                text = self.factory.from_text(length, fontmanager=self.font_manager)
-                self.renderer.copy(text, dstrect=(0, 0, text.size[0], text.size[1]))
-                self.renderer.present()
+                # If it's changed render the new length
+                if length != self.last_length:
+                    self.renderer.clear(sdl2.ext.Color(0, 0, 0))
+                    text = self.factory.from_text(length, fontmanager=self.font_manager)
+                    self.renderer.copy(text, dstrect=(0, 0, text.size[0], text.size[1]))
+                    self.renderer.present()
 
-            self.last_length = length
-            time.sleep(0.1)
+                self.last_length = length
+                time.sleep(0.1)
+        except KeyboardInterrupt:
+            return
