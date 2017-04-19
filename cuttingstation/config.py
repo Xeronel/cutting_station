@@ -42,6 +42,19 @@ class BaseConfig:
 
 class Config(BaseConfig):
     def __init__(self):
-        BaseConfig.__init__(self, {'username': '',
-                                   'password': '',
-                                   'api_url': 'sssprd01.borderstates.com'})
+        BaseConfig.__init__(
+            self,
+            {'username': Entry('', lambda x: type(x) == str and x != ''),
+             'password': Entry('', lambda x: type(x) == str and x != ''),
+             'server': Entry('sss.borderstates.com', lambda x: type(x) == str),
+             'port': Entry(443, lambda x: type(x) == int or type(x) == str),
+             'protocol': Entry('https', lambda x: type(x) == str and x == 'https' or x == 'http'),
+             'name': Entry('', lambda x: type(x) == str and x != '')}
+        )
+        self.name = self._config['name']
+        self.username = self._config['username']
+        self.password = self._config['password']
+        self.server = self._config['server'][:-1] if self._config['server'] == '/' else self._config['server']
+        self.protocol = self._config['protocol']
+        self.port = self._config['port']
+        self.url = "%s://%s:%s" % (self.protocol, self.server, self.port)

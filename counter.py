@@ -7,14 +7,12 @@ import struct
 import RPi.GPIO as GPIO
 from ctypes import c_char_p
 from multiprocessing import Manager, Lock
-from cuttingstation import CuttingStation, GUI, Config
+from cuttingstation import CuttingStation, GUI, WebClient
 from serial import Serial, SerialException
 from serial.tools import list_ports
 from systemd import journal
+from time import sleep
 
-
-# Load config file
-config = Config()
 
 # Setup SDL environment variables
 os.environ["PYSDL2_DLL_PATH"] = os.path.dirname(os.path.abspath(__file__))
@@ -73,6 +71,12 @@ def cleanup():
 
 
 if __name__ == '__main__':
+    web_client = WebClient()
+    web_client.start()
+    while True:
+        sleep(0.1)
+
+if __name__ == '__derp__':
     cut_station = CuttingStation(OK_BUTTON, CANCEL_BUTTON, REPRINT_BUTTON, RESET_PIN, length, lock)
     encoder = get_encoder()
     gui = GUI(length)
