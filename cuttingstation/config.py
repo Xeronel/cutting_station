@@ -24,7 +24,10 @@ class BaseConfig:
         file_name = os.path.join(base, 'config.yaml')
         with open(file_name, 'r') as f:
             self._config = yaml.load(f)
-        self.__load_config(skeleton)
+        if self._config:
+            self.__load_config(skeleton)
+        else:
+            raise IOError("config.yaml not found.")
 
     def __load_config(self, skeleton):
         """
