@@ -4,15 +4,18 @@ from config import Config
 from time import sleep
 import requests
 import json
+import logging
 
 
 class WebClient(Process):
     def __init__(self):
         Process.__init__(self)
+        self.log = logging.getLogger()
         self.config = None
         self.client = None
         self.authenticated = False
         self.last_active = None
+        self.station = None
 
     def run(self):
         try:
@@ -46,39 +49,54 @@ class WebClient(Process):
 
             # Check if authentication was successful
             if 'uid' in self.client.cookies:
+                self.station = json.loads(self.client.get(self.config.url + '/api/v1/station/').text)['id']
                 self.authenticated = True
             else:
+                self.log.warning("Login failed")
                 self.authenticated = False
-        except requests.exceptions.RequestException:
+        except (requests.exceptions.RequestException, KeyError):
             self.authenticated = False
 
     def get_work_order(self):
-        r = self.get(self.config.url + '/api/v1/wire_station/%s/active_work_order' % self.config.name)
-        wo = json.loads(r.text).get('active_work_order', None)
-        return wo if wo else None
+        r = self.get('/api/v1/station/%s/active_work_order' % self.station)
+        try:
+            wo = json.loads(r.text).get('active_work_order', None)
+        except (ValueError, AttributeError):
+            wo = None
+        return wo
 
     def get_cuts(self, work_order):
-        r = self.get(self.config.url + '/api/v1/work_order/%s/items' % work_order)
+        r = self.get('/api/v1/work_order/%s/items' % work_order)
         if r:
             print(r.text)
 
-    def get(self, *args, **kwargs):
+    def get(self, url, **kwargs):
+        # Make sure we're authenticated before making requests
+        while not self.authenticated:
+            self.login()
+            sleep(3)  # Rate limit login attemps
+
+        # Append url from config to url
+        url = self.config.url + '/' + url.lstrip('/')
+
         # Use a default timeout of 1 second
         if 'timeout' not in kwargs:
             kwargs['timeout'] = 1
 
         try:
-            r = self.client.get(*args, **kwargs)
-            # If access denied, try to login again
-            if r.status_code == 401 or not self.authenticated:
-                while not self.authenticated:
-                    print("Not connected, retrying...")
-                    self.login()
-                    sleep(3)  # Rate limit login attempts
-                r = self.client.get(*args, **kwargs)
+            r = self.client.get(url, **kwargs)
+            if r.status_code == 401:
+                self.log.warning("Access denied: %s" % url)
         except requests.ConnectionError:
-            return None
-
+            self.authenticated = False
+            self.station = None
+            self.client = requests.Session()
+            self.log.warning("Connection error")
+            while not self.authenticated:
+                self.log.debug("Connection error, retrying login")
+                self.login()
+                sleep(3)  # Rate limit login attempts
+            r = self.client.get(url, **kwargs)
         return r
 
 
