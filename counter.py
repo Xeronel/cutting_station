@@ -1,4 +1,5 @@
 #!/usr/bin/python2.7
+import logging
 import fcntl
 import os
 import signal
@@ -7,15 +8,25 @@ import struct
 import RPi.GPIO as GPIO
 from ctypes import c_char_p
 from multiprocessing import Manager, Lock
-from cuttingstation import CuttingStation, GUI, WebClient
+from cuttingstation import CuttingStation, GUI, WebClient, Config
 from serial import Serial, SerialException
 from serial.tools import list_ports
 from systemd import journal
 from time import sleep
 
 
-# Setup SDL environment variables
 os.environ["PYSDL2_DLL_PATH"] = os.path.dirname(os.path.abspath(__file__))
+config = Config()
+
+# Setup logging facilities
+logging.basicConfig(format="[%(filename)s:%(lineno)s %(module)s.%(funcName)s()] %(message)s")
+log = logging.getLogger()
+log.propagate = True
+if config.debug:
+    log.setLevel(logging.DEBUG)
+else:
+    log.addHandler(journal.JournaldLogHandler())
+    log.setLevel(logging.INFO)
 
 # GPIO inputs
 OK_BUTTON = 4
@@ -84,13 +95,13 @@ if __name__ == '__derp__':
     # Handle exit gracefully
     signal.signal(signal.SIGTERM, stop)
 
-    journal.send(get_ip_address('eth0'))
-    journal.send("Main: %s" % os.getpid())
+    log.info(get_ip_address('eth0'))
+    log.info("Main: %s" % os.getpid())
 
     try:
         cut_station.start()
         gui.start()
-        journal.send("SDL pid: %s" % gui.pid)
+        log.info("SDL pid: %s" % gui.pid)
 
         while running:
             try:
