@@ -22,17 +22,21 @@ class BaseConfig:
         """
         base = os.path.dirname(os.path.dirname(__file__))
         file_name = os.path.join(base, 'config.yaml')
-        with open(file_name, 'r') as f:
-            self._config = yaml.load(f)
-        if self._config:
-            self.__load_config(skeleton)
-        else:
-            raise IOError("config.yaml not found.")
+        try:
+            with open(file_name, 'r') as f:
+                self._config = yaml.load(f)
+        except IOError:
+            self._config = {}
+
+        self.__load_config(skeleton)
 
     def __load_config(self, skeleton):
         """
         :param skeleton: A dictionary of Entry objects
         """
+        if self._config is None:
+            self._config = {}
+
         for k in skeleton:
             value = self._config.setdefault(k, skeleton[k].value)
             if not skeleton[k].validate(value):
@@ -52,12 +56,12 @@ class Config(BaseConfig):
              'server': Entry('sss.borderstates.com', lambda x: type(x) == str),
              'port': Entry(443, lambda x: type(x) == int or type(x) == str),
              'protocol': Entry('https', lambda x: type(x) == str and x == 'https' or x == 'http'),
-             'name': Entry('', lambda x: type(x) == str and x != '')}
+             'debug': Entry(False, lambda x: type(x) == bool)}
         )
-        self.name = self._config['name']
         self.username = self._config['username']
         self.password = self._config['password']
         self.server = self._config['server'][:-1] if self._config['server'] == '/' else self._config['server']
         self.protocol = self._config['protocol']
         self.port = self._config['port']
         self.url = "%s://%s:%s" % (self.protocol, self.server, self.port)
+        self.debug = self._config['debug']
