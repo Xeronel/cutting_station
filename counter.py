@@ -12,7 +12,6 @@ from cuttingstation import CuttingStation, GUI, WebClient, Config
 from serial import Serial, SerialException
 from serial.tools import list_ports
 from systemd import journal
-from time import sleep
 
 
 os.environ["PYSDL2_DLL_PATH"] = os.path.dirname(os.path.abspath(__file__))
