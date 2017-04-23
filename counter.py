@@ -56,8 +56,10 @@ def get_encoder():
     if com_ports:
         port = com_ports[0][0]
         try:
+            log.info("Serial Port: %s" % port)
             return Serial(port, 9600, timeout=1)
         except SerialException:
+            log.warning("Failed to get serial device")
             return None
 
 
@@ -82,26 +84,22 @@ def cleanup():
 
 
 if __name__ == '__main__':
-    web_client = WebClient()
-    web_client.start()
-    while True:
-        sleep(0.1)
-
-if __name__ == '__derp__':
+    log.info(get_ip_address('eth0'))
     cut_station = CuttingStation(OK_BUTTON, CANCEL_BUTTON, REPRINT_BUTTON, RESET_PIN, length, lock)
+    web_client = WebClient()
     encoder = get_encoder()
     gui = GUI(length)
 
     # Handle exit gracefully
     signal.signal(signal.SIGTERM, stop)
 
-    log.info(get_ip_address('eth0'))
-    log.info("Main: %s" % os.getpid())
-
     try:
         cut_station.start()
+        web_client.start()
         gui.start()
-        log.info("SDL pid: %s" % gui.pid)
+        log.info("Main: %s" % os.getpid())
+        log.info(("Web pid: %s" % web_client.pid))
+        log.info("GUI pid: %s" % gui.pid)
 
         while running:
             try:

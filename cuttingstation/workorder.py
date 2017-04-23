@@ -25,7 +25,7 @@ class WebClient(Process):
             while True:
                 wo = self.get_work_order()
                 if wo != self.last_active:
-                    self.get_cuts(wo)
+                    items = self.get_items(wo)
                 self.last_active = wo
                 sleep(3)
         except KeyboardInterrupt:
@@ -65,10 +65,15 @@ class WebClient(Process):
             wo = None
         return wo
 
-    def get_cuts(self, work_order):
+    def get_items(self, work_order):
         r = self.get('/api/v1/work_order/%s/items' % work_order)
-        if r:
-            print(r.text)
+        try:
+            items = json.loads(r.text)
+            self.log.debug("Loaded items: %s" % str(items))
+        except (ValueError, AttributeError):
+            self.log.debug("Failed to load items for work order %s" % work_order)
+            items = {}
+        return items
 
     def get(self, url, **kwargs):
         # Make sure we're authenticated before making requests
