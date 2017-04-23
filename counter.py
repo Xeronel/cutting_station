@@ -64,11 +64,13 @@ def get_encoder():
 
 def get_ip_address(ifname):
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    return socket.inet_ntoa(fcntl.ioctl(
+    ip_addr = socket.inet_ntoa(fcntl.ioctl(
         s.fileno(),
         0x8915,  # SIOCGIFADDR
         struct.pack('256s', ifname[:15])
     )[20:24])
+    log.info(ip_addr)
+    return ip_addr
 
 
 def stop(signum, frame):
@@ -83,7 +85,7 @@ def cleanup():
 
 
 if __name__ == '__main__':
-    log.info(get_ip_address('eth0'))
+    get_ip_address('eth0')
     cut_station = CuttingStation(OK_BUTTON, CANCEL_BUTTON, REPRINT_BUTTON, RESET_PIN, length, lock)
     web_client = WebClient()
     encoder = get_encoder()
