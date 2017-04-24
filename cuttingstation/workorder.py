@@ -115,3 +115,13 @@ class XSRF(HTMLParser):
         name = dict(attrs).get('name')
         if name == '_xsrf' and tag == 'input' and xsrf:
             self.value = xsrf
+
+
+class WorkOrder:
+    def __index__(self, consumable, producible):
+        self.consumable = consumable
+        self.producible = {}
+        for item in producible:
+            self.producible.setdefault(
+                item['wire'], []
+            ).append([{item['cut_length']: i + 1} for i in range(cut['qty'])])
