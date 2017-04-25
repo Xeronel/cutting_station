@@ -118,7 +118,7 @@ class XSRF(HTMLParser):
 
 
 class WorkOrder:
-    def __index__(self, consumable, producible):
+    def __init__(self, consumable, producible):
         self.consumable = consumable
         self.producible = {}
         for item in producible:
