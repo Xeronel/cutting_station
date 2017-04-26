@@ -19,7 +19,7 @@ config = Config()
 
 # Setup logging facilities
 logging.basicConfig(format="[%(filename)s:%(lineno)s %(module)s.%(funcName)s()] %(message)s")
-log = logging.getLogger()
+log = logging.getLogger('cuttingstation')
 log.propagate = True
 if config.debug:
     log.setLevel(logging.DEBUG)
