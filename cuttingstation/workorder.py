@@ -29,7 +29,7 @@ class WebClient(Process):
                 if wo_id != self.last_wo_id:
                     work_order = WorkOrder(self.get_active_work_order())
                     self.log.debug("Loaded work order #%s" % work_order.number)
-
+                    work_order.calc_best_consumption()
                 self.last_wo_id = wo_id
                 sleep(3)
         except KeyboardInterrupt:
@@ -119,22 +119,44 @@ class XSRF(HTMLParser):
 
 class WorkOrder:
     def __init__(self, work_order):
+        self.log = logging.getLogger(__name__)
         self._work_order = work_order
-        self.current_consumable = None
-        self.current_producible = None
-        self.number = work_order['work_order']['station']
-        self.consumable = work_order['consumables']
-        self.producible = {}
+        self.number = work_order['work_order']['id']
+        self.consumables = work_order['consumables']
+        self.producibles = {}
+        self.producible_combos = {}
         for item in work_order['items']:
-            self.producible.setdefault(
+            self.producibles[item['id']] = item
+            self.producible_combos.setdefault(
                 item['consumable_part_number'], []
-            ).append([{item['consume_qty']: i + 1} for i in range(item['qty'])])
-        self.producible_combos = self._all_combos(*self.producible)
+            ).append(
+                [{'consume_qty': item['consume_qty'], 'qty': i + 1, 'id': item['id']} for i in range(item['qty'])]
+            )
 
-    def least_waste(self):
-        pass
+    def calc_best_consumption(self):
+        consumable = self.consumables.pop()
+        self.log.debug("Consume: %s" % consumable)
+        best_producible = None
+        least_waste = consumable['current_qty']
 
-    def next(self):
+        # Iterate over possible ways to produce the items required
+        for combo in self._all_combos(*self.producible_combos[consumable['part_number']]):
+            # Calculate the total amount consumed for the current combination of producible items and quantities
+            consume = sum([x['consume_qty'] * x['qty'] for x in combo])
+
+            # Calculate the amount of waste that will be created
+            waste = consumable['current_qty'] - consume
+            if waste >= 0 < least_waste:
+                least_waste = waste
+                best_producible = combo
+                # If there is no waste exit early
+                if waste == 0:
+                    break
+
+        self.log.debug("Best: %s" % str(best_producible))
+        self.log.debug("Waste: %s" % str(least_waste))
+
+    def next_cut(self):
         pass
 
     @staticmethod
