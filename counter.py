@@ -7,7 +7,7 @@ import socket
 import struct
 import RPi.GPIO as GPIO
 from ctypes import c_char_p
-from multiprocessing import Manager, Lock
+from multiprocessing import Manager, Lock, Queue
 from cuttingstation import CuttingStation, GUI, WebClient, Config
 from serial import Serial, SerialException
 from serial.tools import list_ports
@@ -45,6 +45,9 @@ GPIO.setup(RESET_PIN, GPIO.OUT, initial=GPIO.LOW)
 manager = Manager()
 length = manager.Value(c_char_p, "Feet: 0, Inches: 0")
 lock = Lock()
+
+# Queue for work order processing
+queue = Queue()
 
 # Exit handler
 running = True

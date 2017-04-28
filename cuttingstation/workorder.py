@@ -10,9 +10,10 @@ import itertools
 
 
 class WebClient(Process):
-    def __init__(self):
+    def __init__(self, queue):
         Process.__init__(self)
         self.log = logging.getLogger(__name__)
+        self.queue = queue
         self.config = None
         self.client = None
         self.authenticated = False
@@ -120,32 +121,63 @@ class XSRF(HTMLParser):
 class WorkOrder:
     def __init__(self, work_order):
         self.log = logging.getLogger(__name__)
+
+        # Get information about the work order
         self._work_order = work_order
         self.number = work_order['work_order']['id']
+
+        # Get consumables
         self.consumables = work_order['consumables']
+        self._current_consumable = self.consumables.pop()
+
+        # Process producibles into usable structures
         self.producibles = {}
-        self.producible_combos = {}
+        self._producible_combos = {}
+        self._smallest_consumption = {}
         for item in work_order['items']:
             self.producibles[item['id']] = item
-            self.producible_combos.setdefault(
+
+            # Create a dictionary of the smallest producible quantity of each consumable
+            # {
+            #     '10/2-N-B-WG': 11,
+            #     '14/2-N-B-WG': 6
+            # }
+            # set an arbitrarily large default value as this is intended to be overridden
+            if item['consume_qty'] < self._smallest_consumption.setdefault(item['consumable_part_number'], 100000):
+                self._smallest_consumption[item['consumable_part_number']] = item['consume_qty']
+
+            # Create a dictionary of possible ways to break down each producible where the consumable is the key
+            # {
+            #     '10/2-N-B-WG': [
+            #         {'consume_qty': 30, 'id': 7, 'qty': 1},
+            #         {'consume_qty': 30, 'id': 7, 'qty': 2}
+            #     ]
+            # }
+            self._producible_combos.setdefault(
                 item['consumable_part_number'], []
             ).append(
                 [{'consume_qty': item['consume_qty'], 'qty': i + 1, 'id': item['id']} for i in range(item['qty'])]
             )
 
     def calc_best_consumption(self):
-        consumable = self.consumables.pop()
-        self.log.debug("Consume: %s" % consumable)
+        # If there is not enough consumable left to create the smallest producible get a new consumable item
+        if self._current_consumable.get('current_qty', 0) < self._smallest_consumption[
+            self._current_consumable['part_number']
+        ]:
+            self._current_consumable = self.consumables.pop()
+        self.log.debug("Consume: %s" % self._current_consumable)
+
+        # Loop vars
         best_producible = None
-        least_waste = consumable['current_qty']
+        least_waste = self._current_consumable['current_qty']
 
         # Iterate over possible ways to produce the items required
-        for combo in self._all_combos(*self.producible_combos[consumable['part_number']]):
+        for combo in self._all_combos(*self._producible_combos[self._current_consumable['part_number']]):
             # Calculate the total amount consumed for the current combination of producible items and quantities
             consume = sum([x['consume_qty'] * x['qty'] for x in combo])
 
             # Calculate the amount of waste that will be created
-            waste = consumable['current_qty'] - consume
+            waste = self._current_consumable['current_qty'] - consume
             if waste >= 0 < least_waste:
                 least_waste = waste
                 best_producible = combo
